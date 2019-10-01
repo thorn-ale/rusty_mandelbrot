@@ -1,5 +1,5 @@
 extern crate num;
-use num::{Float, FromPrimitive};
+use num::Float;
 
 extern crate png;
 use png::HasParameters;
@@ -13,21 +13,12 @@ use std::path::Path;
 extern crate rayon;
 use rayon::prelude::*;
 
+
+
 const MAX_ITER: u32 = 1500;
-const WIDTH: u32 = 3600*4;
-const HEIGHT: u32 = 2400*4;
+const WIDTH: u32 = 3600;
+const HEIGHT: u32 = 2400;
 
-
-fn linspace<T>(start: T, stop: T, nstep: u32) -> Vec<T>
-	where
-		T: Float + FromPrimitive,
-{
-	let delta: T = (stop - start) / T::from_u32(nstep - 1).expect("out of range");
-	return (0..(nstep))
-		.map(|i| start + T::from_u32(i)
-			.expect("out of range") * delta)
-		.collect();
-}
 
 fn x_scale(x: f64, x_max : f64, x_min: f64) -> f64 {
 	x * (x_max-x_min) / WIDTH as f64 + x_min
@@ -59,11 +50,11 @@ fn mandelbrot(i: f64, j: f64, x_min: f64, y_min: f64, x_max: f64, y_max : f64) -
 		let result_t = (t + 1) as f64 - (x.powi(2) + y.powi(2)).sqrt().log(2.0).ln();
 		let c = result_t;//3.0 * result_t.ln() / (result_t - 1.0).ln();
 		if c < 1.0 {
-			return vec![(255.0*c).round() as u8, 0, 0];
+			return vec![0, 0, (255.0*c).round() as u8];
 		} else if c < 2.0 {
 			return vec![0, (255.0*(c-1.0)).round() as u8, 0];
 		} else {
-			return vec![0, 0, (255.0*(c-2.0)).round() as u8];
+			return vec![(255.0*(c-2.0)).round() as u8, 0, 0];
 			//return vec![(255.0*(c-2.0)).round() as u8, 0, 0];
 			//return vec![0,(255.0*(c-2.0)).round() as u8, 0];
 		}
@@ -85,6 +76,7 @@ fn write_img(name : &str, data: &Vec<u8>) {
 	writer.write_image_data(&data).unwrap();
 }
 
+#[allow(dead_code)]
 fn mandelbrot_space(x_min: f64, y_min: f64, x_max: f64, y_max : f64, id: usize) {
 	let mut data = vec![];
 	for i in 0..HEIGHT {
@@ -112,8 +104,9 @@ fn mandelbrot_par_space(x_min: f64, y_min: f64, x_max: f64, y_max : f64, id: usi
 	write_img(&name, &data2);
 }
 
+#[allow(dead_code)]
 fn wrapper(id: usize, in_x_min: f64, in_y_min: f64, in_x_max: f64, in_y_max: f64) {
-	/*
+	
 	let x_rate = (1.0-(-2.5))/(WIDTH as f64- 0.0);
 	let x_offset = -2.5 - (0.0 * x_rate);
 	
@@ -125,29 +118,13 @@ fn wrapper(id: usize, in_x_min: f64, in_y_min: f64, in_x_max: f64, in_y_max: f64
 
 	let y_min = in_y_min as f64 * y_rate + y_offset;
 	let y_max = in_y_max as f64  * y_rate + y_offset;
-	*/
-	//mandelbrot_space(-2.5,-1.0,1.0,1.0)
-	//println!("{},{},{},{},", x_min, y_min, x_max, y_max);
-	//mandelbrot_space(x_min, y_min, x_max, y_max, id);
-	mandelbrot_par_space(-1.25066, 0.02012, -1.25067, 0.02013, id);
+	mandelbrot_par_space(x_min, y_min, x_max, y_max, id);
 }
 
 fn main() {
-	//let rng = 0..((WIDTH * HEIGHT));
-	//rng.into_par_iter().enumerate().for_each(|(id,p)| wrapper(id, (p%WIDTH) as f64, (p/WIDTH) as f64, (p%WIDTH+1) as f64, (p/WIDTH+1) as f64));
-	//wrapper(2usize, 2014.54, 462.54,2014.55,462.55);
-	//wrapper(1 as usize,1466.0,409.0,1468.0,411.0)
-	/*
-	let slice_size_x =  (-1.25066+(0.00017/3.0) - (-1.25066) ) / 20.0;
-	let slice_size_y = 0.02012+(0.00017/3.0) - 0.02012 /20.0;
-	let rng_x = linspace(-1.25066, -1.25066+(0.00017/3.0), 20);
-	let mut rng_y = linspace(0.02012, 0.02012+(0.00017/3.0), 20);
-	rng_x
-		.par_iter()
-		.enumerate()
-		.for_each(|(id,x)| rng_y
-			.iter().
-			for_each(|y| mandelbrot_par_space(*x, *y, *x+slice_size_x, *y + slice_size_y, id)));
-	*/
-	mandelbrot_par_space(-1.25066, 0.02012, -1.25066+(0.00017/3.0), 0.02012+(0.00017/3.0), 2);
+	let x_min = -1.25066;
+	let y_min = 0.02012;
+	let x_max = -1.25066+(0.00017/3.0);
+	let y_max = 0.02012+(0.00017/3.0);
+	mandelbrot_par_space(x_min, y_min, x_max, y_max, 2);
 }
